@@ -13,7 +13,7 @@ export function StepBridge({ config, updateConfig }) {
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold text-text-primary">Le Bridge</h2>
         <p className="text-text-secondary">L'association inattendue qui devient le fil rouge</p>
-        <p className="text-text-muted text-sm">"Quelle métaphore / histoire / célébrité rend ça mémorable ?"</p>
+        <p className="text-text-muted text-sm">Optionnel : si vide, l'IA trouvera le bridge via recherche internet</p>
       </div>
 
       <textarea

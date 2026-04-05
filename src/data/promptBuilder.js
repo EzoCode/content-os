@@ -23,16 +23,18 @@ export function buildPrompt(config) {
 ${fond}
 
 ## 2. BRIDGE (L'association inattendue — fil rouge)
-${bridge}
+${bridge?.trim() ? bridge : `**AUCUN BRIDGE FOURNI** — Tu dois en trouver un toi-même.
+Cherche une association inattendue qui servira de fil rouge : célébrité, film, expérience scientifique, phénomène de société, histoire mythologique, ou marque/entreprise.
+Le bridge doit rendre l'idée mémorable et racontable. Propose 3 options de bridge avant de choisir le meilleur pour le script.`}
 
 ## 3. CONCEPT PSYCHOLOGIQUE
-**Catégorie : ${conceptPsy.name}**
+${conceptPsy ? `**Catégorie : ${conceptPsy.name}**
 ${conceptPsy.description}
-${subConcept ? `\n**Sous-concept choisi : ${subConcept.name}**\n${subConcept.description}` : ''}
+${subConcept ? `\n**Sous-concept choisi : ${subConcept.name}**\n${subConcept.description}` : ''}` : 'Aucun concept choisi — choisis le concept psychologique le plus pertinent pour ce fond.'}
 
 ## 4. MÉCANIQUE (Format de livraison)
-**${formatMecanique.name}** — ${formatMecanique.description}
-Catégorie : ${formatMecanique.category}
+${formatMecanique ? `**${formatMecanique.name}** — ${formatMecanique.description}
+Catégorie : ${formatMecanique.category}` : 'Aucune mécanique choisie — propose le format le plus adapté.'}
 
 ${genreBeat ? `## BOOSTER DE GENRE
 **${genreBeat.genre} — ${genreBeat.beat}**

@@ -1,17 +1,4 @@
-export function StepIndicator({ steps, currentStep, onStepClick, config }) {
-  const isStepAccessible = (stepId) => {
-    if (stepId === 1) return true
-    if (stepId <= currentStep) return true
-    switch (stepId) {
-      case 2: return config.fond.trim().length > 10
-      case 3: return config.bridge.trim().length > 5
-      case 4: return config.conceptPsy !== null
-      case 5: return config.formatMecanique !== null
-      case 6: return true
-      default: return false
-    }
-  }
-
+export function StepIndicator({ steps, currentStep, onStepClick }) {
   return (
     <div className="border-b border-border bg-bg-secondary/50">
       <div className="max-w-6xl mx-auto px-6 py-3">
@@ -19,22 +6,18 @@ export function StepIndicator({ steps, currentStep, onStepClick, config }) {
           {steps.map((s, i) => {
             const active = s.id === currentStep
             const completed = s.id < currentStep
-            const accessible = isStepAccessible(s.id)
 
             return (
               <div key={s.id} className="flex items-center">
                 <button
-                  onClick={() => accessible && onStepClick(s.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap ${
+                  onClick={() => onStepClick(s.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap cursor-pointer ${
                     active
                       ? 'bg-accent/20 text-accent-light border border-border-active'
                       : completed
-                        ? 'text-success cursor-pointer hover:bg-bg-card'
-                        : accessible
-                          ? 'text-text-secondary cursor-pointer hover:bg-bg-card'
-                          : 'text-text-muted cursor-not-allowed opacity-40'
+                        ? 'text-success hover:bg-bg-card'
+                        : 'text-text-secondary hover:bg-bg-card'
                   }`}
-                  disabled={!accessible}
                 >
                   <span>{completed ? '✓' : s.icon}</span>
                   <span className="hidden sm:inline">{s.label}</span>
