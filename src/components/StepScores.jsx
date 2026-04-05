@@ -1,5 +1,4 @@
-import { closingEmotions, qualityCriteria } from '../data/concepts'
-import { SelectableCard } from './SelectableCard'
+import { qualityCriteria } from '../data/concepts'
 
 function ScoreSlider({ label, description, value, onChange }) {
   return (
@@ -12,7 +11,7 @@ function ScoreSlider({ label, description, value, onChange }) {
         {[1, 2, 3, 4, 5].map(n => (
           <button
             key={n}
-            onClick={() => onChange(n)}
+            onClick={() => onChange(value === n ? 0 : n)}
             className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${
               value >= n
                 ? 'bg-accent text-white'
@@ -27,7 +26,7 @@ function ScoreSlider({ label, description, value, onChange }) {
   )
 }
 
-export function StepClosingScores({ config, updateConfig }) {
+export function StepScores({ config, updateConfig }) {
   const updateScore = (category, id, value) => {
     updateConfig('scores', {
       ...config.scores,
@@ -39,35 +38,12 @@ export function StepClosingScores({ config, updateConfig }) {
   }
 
   return (
-    <div className="space-y-8 pb-24">
-      {/* Closing Emotion */}
-      <div className="space-y-4">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold text-text-primary">Émotion de Closing</h2>
-          <p className="text-text-secondary">Quelle émotion doit rester après ta vidéo ?</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {closingEmotions.map(em => (
-            <SelectableCard
-              key={em.id}
-              item={em}
-              selected={config.closingEmotion?.id === em.id}
-              onClick={(e) => updateConfig('closingEmotion', e)}
-              compact
-            />
-          ))}
-        </div>
+    <div className="max-w-2xl mx-auto space-y-8 pb-24">
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-bold text-text-primary">Scores de Qualité</h2>
+        <p className="text-text-secondary">Évalue les critères de ton contenu (optionnel mais recommandé)</p>
       </div>
 
-      {/* Divider */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-border" />
-        <span className="text-text-muted text-sm">scores de qualité (optionnel)</span>
-        <div className="flex-1 h-px bg-border" />
-      </div>
-
-      {/* SUCCES Scores */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-text-primary">
           Framework SUCCES <span className="text-text-muted text-sm font-normal">— Engagement & Mémorabilité</span>
@@ -85,7 +61,6 @@ export function StepClosingScores({ config, updateConfig }) {
         </div>
       </div>
 
-      {/* Nouveauté Scores */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-text-primary">
           Nouveauté <span className="text-text-muted text-sm font-normal">— Innovation de l'angle</span>
@@ -100,6 +75,18 @@ export function StepClosingScores({ config, updateConfig }) {
               onChange={(v) => updateScore('nouveaute', c.id, v)}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Summary of selections */}
+      <div className="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-accent-light">Récap de ta configuration</h3>
+        <div className="space-y-2 text-sm">
+          <div><span className="text-text-muted">Fond :</span> <span className="text-text-primary">{config.fond.substring(0, 60)}...</span></div>
+          <div><span className="text-text-muted">Bridge :</span> <span className="text-text-primary">{config.bridge.substring(0, 60)}...</span></div>
+          <div><span className="text-text-muted">Concept :</span> <span className="text-text-primary">{config.conceptPsy?.name}{config.subConcept ? ` → ${config.subConcept.name}` : ''}</span></div>
+          <div><span className="text-text-muted">Mécanique :</span> <span className="text-text-primary">{config.formatMecanique?.name}</span></div>
+          {config.genreBeat && <div><span className="text-text-muted">Beat :</span> <span className="text-text-primary">{config.genreBeat.genre} — {config.genreBeat.beat}</span></div>}
         </div>
       </div>
     </div>

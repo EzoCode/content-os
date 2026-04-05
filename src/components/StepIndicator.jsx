@@ -3,13 +3,11 @@ export function StepIndicator({ steps, currentStep, onStepClick, config }) {
     if (stepId === 1) return true
     if (stepId <= currentStep) return true
     switch (stepId) {
-      case 2: return config.idea.trim().length > 10
-      case 3: return config.psychoConcept !== null
-      case 4: return config.hookCategory !== null
+      case 2: return config.fond.trim().length > 10
+      case 3: return config.bridge.trim().length > 5
+      case 4: return config.conceptPsy !== null
       case 5: return config.formatMecanique !== null
-      case 6: return config.contentFormat !== null
-      case 7: return config.hookType !== null && config.leadType !== null
-      case 8: return config.closingEmotion !== null
+      case 6: return true
       default: return false
     }
   }
@@ -42,7 +40,7 @@ export function StepIndicator({ steps, currentStep, onStepClick, config }) {
                   <span className="hidden sm:inline">{s.label}</span>
                 </button>
                 {i < steps.length - 1 && (
-                  <div className={`w-6 h-px mx-1 ${completed ? 'bg-success' : 'bg-border'}`} />
+                  <div className={`w-8 h-px mx-1 ${completed ? 'bg-success' : 'bg-border'}`} />
                 )}
               </div>
             )

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { formatMecaniques } from '../data/concepts'
+import { formatMecaniques, genreBeats } from '../data/concepts'
 import { SelectableCard } from './SelectableCard'
 
-export function StepFormatMecanique({ config, updateConfig }) {
+export function StepMecanique({ config, updateConfig }) {
   const [filter, setFilter] = useState('all')
+  const [showBeats, setShowBeats] = useState(false)
 
   const categories = [...new Set(formatMecaniques.map(f => f.category))]
 
@@ -14,8 +15,8 @@ export function StepFormatMecanique({ config, updateConfig }) {
   return (
     <div className="space-y-6 pb-24">
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-text-primary">Format Mécanique</h2>
-        <p className="text-text-secondary">Choisis le format visuel/mécanique de ta vidéo</p>
+        <h2 className="text-3xl font-bold text-text-primary">Mécanique</h2>
+        <p className="text-text-secondary">"Comment je filme / monte ?" — Le format de livraison</p>
       </div>
 
       <div className="flex flex-wrap gap-2 justify-center">
@@ -47,6 +48,7 @@ export function StepFormatMecanique({ config, updateConfig }) {
             item={format}
             selected={config.formatMecanique?.id === format.id}
             onClick={(f) => updateConfig('formatMecanique', f)}
+            compact
           />
         ))}
       </div>
@@ -54,10 +56,39 @@ export function StepFormatMecanique({ config, updateConfig }) {
       {config.formatMecanique && (
         <div className="bg-accent/10 border border-border-active rounded-xl p-4 text-center">
           <span className="text-accent-light text-sm">
-            Sélectionné : <strong>{config.formatMecanique.name}</strong> ({config.formatMecanique.category})
+            Mécanique : <strong>{config.formatMecanique.name}</strong> ({config.formatMecanique.category})
           </span>
         </div>
       )}
+
+      {/* Genre Beats Booster */}
+      <div className="border-t border-border pt-6">
+        <button
+          onClick={() => setShowBeats(!showBeats)}
+          className="w-full text-center text-sm text-text-secondary hover:text-accent-light transition-all"
+        >
+          {showBeats ? '▼' : '▶'} Booster de Genre (optionnel) — Ajouter un beat narratif de genre
+        </button>
+
+        {showBeats && (
+          <div className="fade-in mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+            {genreBeats.map(gb => (
+              <button
+                key={gb.id}
+                onClick={() => updateConfig('genreBeat', config.genreBeat?.id === gb.id ? null : gb)}
+                className={`text-left p-3 rounded-lg text-sm transition-all ${
+                  config.genreBeat?.id === gb.id
+                    ? 'bg-accent/20 text-accent-light border border-border-active'
+                    : 'bg-bg-card border border-border text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                <span className="font-medium">{gb.genre} — {gb.beat}</span>
+                <p className="text-xs text-text-muted mt-1">{gb.hook}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

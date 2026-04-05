@@ -32,12 +32,7 @@ export function StepGenerate({ config, updateConfig }) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 8192,
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ]
+          messages: [{ role: 'user', content: prompt }]
         })
       })
 
@@ -47,12 +42,8 @@ export function StepGenerate({ config, updateConfig }) {
       }
 
       const data = await response.json()
-      const text = data.content?.[0]?.text || 'Pas de réponse'
-      setResult(text)
-
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
+      setResult(data.content?.[0]?.text || 'Pas de réponse')
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -65,34 +56,23 @@ export function StepGenerate({ config, updateConfig }) {
     localStorage.setItem('claude-api-key', key)
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result)
-  }
-
-  const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(prompt)
-  }
-
   return (
     <div className="space-y-6 pb-12">
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold text-text-primary">Générer le Script</h2>
-        <p className="text-text-secondary">Vérifie ta configuration et lance la génération</p>
+        <p className="text-text-secondary">FOND × BRIDGE × CONCEPT × MÉCANIQUE → Script</p>
       </div>
 
       {/* Summary */}
       <div className="bg-bg-card border border-border rounded-xl p-6 space-y-3">
         <h3 className="text-lg font-semibold text-accent-light">Récapitulatif</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <SummaryItem label="Idée" value={config.idea?.substring(0, 80) + (config.idea?.length > 80 ? '...' : '')} />
-          <SummaryItem label="Concept Psy" value={config.psychoConcept?.name} />
-          <SummaryItem label="Hook Category" value={config.hookCategory?.name} />
-          {config.hookSubFormat && <SummaryItem label="Sous-format" value={config.hookSubFormat} />}
-          <SummaryItem label="Format Mécanique" value={config.formatMecanique?.name} />
-          <SummaryItem label="Format Contenu" value={config.contentFormat?.name} />
-          <SummaryItem label="Type Hook" value={config.hookType?.name} />
-          <SummaryItem label="Type Lead" value={config.leadType?.name} />
-          <SummaryItem label="Émotion Closing" value={config.closingEmotion?.name} />
+          <SummaryItem label="Fond" value={config.fond?.substring(0, 80) + (config.fond?.length > 80 ? '...' : '')} />
+          <SummaryItem label="Bridge" value={config.bridge?.substring(0, 80) + (config.bridge?.length > 80 ? '...' : '')} />
+          <SummaryItem label="Concept Psy" value={config.conceptPsy?.name} />
+          {config.subConcept && <SummaryItem label="Sous-concept" value={config.subConcept.name} />}
+          <SummaryItem label="Mécanique" value={`${config.formatMecanique?.name} (${config.formatMecanique?.category})`} />
+          {config.genreBeat && <SummaryItem label="Beat de Genre" value={`${config.genreBeat.genre} — ${config.genreBeat.beat}`} />}
         </div>
       </div>
 
@@ -110,21 +90,19 @@ export function StepGenerate({ config, updateConfig }) {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 justify-center">
+      <div className="flex flex-wrap gap-3 justify-center">
         <button
           onClick={() => setShowPrompt(!showPrompt)}
-          className="px-6 py-3 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-border-active transition-all"
+          className="px-5 py-3 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-border-active transition-all text-sm"
         >
-          {showPrompt ? 'Masquer le Prompt' : 'Voir le Prompt'}
+          {showPrompt ? 'Masquer' : 'Voir le Prompt'}
         </button>
-
         <button
-          onClick={handleCopyPrompt}
-          className="px-6 py-3 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-border-active transition-all"
+          onClick={() => navigator.clipboard.writeText(prompt)}
+          className="px-5 py-3 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-border-active transition-all text-sm"
         >
           Copier le Prompt
         </button>
-
         <button
           onClick={handleGenerate}
           disabled={generating || !config.apiKey}
@@ -132,48 +110,35 @@ export function StepGenerate({ config, updateConfig }) {
         >
           {generating ? (
             <span className="flex items-center gap-2">
-              <span className="animate-spin">⚡</span> Génération en cours...
+              <span className="animate-spin">⚡</span> Génération...
             </span>
-          ) : (
-            '🚀 Générer le Script'
-          )}
+          ) : '🚀 Générer le Script'}
         </button>
       </div>
 
-      {/* Prompt Preview */}
       {showPrompt && (
         <div className="fade-in bg-bg-card border border-border rounded-xl p-4">
-          <pre className="text-xs text-text-secondary whitespace-pre-wrap max-h-96 overflow-y-auto font-mono">
-            {prompt}
-          </pre>
+          <pre className="text-xs text-text-secondary whitespace-pre-wrap max-h-96 overflow-y-auto font-mono">{prompt}</pre>
         </div>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="bg-danger/10 border border-danger/30 rounded-xl p-4 text-danger text-sm">
-          {error}
-        </div>
+        <div className="bg-danger/10 border border-danger/30 rounded-xl p-4 text-danger text-sm">{error}</div>
       )}
 
-      {/* Result */}
       {result && (
         <div ref={resultRef} className="fade-in space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-success">Script Généré</h3>
             <button
-              onClick={handleCopy}
+              onClick={() => navigator.clipboard.writeText(result)}
               className="px-4 py-2 rounded-lg bg-success/20 text-success text-sm hover:bg-success/30 transition-all"
             >
               Copier le Script
             </button>
           </div>
           <div className="bg-bg-card border border-success/30 rounded-xl p-6">
-            <div className="prose prose-invert max-w-none">
-              <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans leading-relaxed">
-                {result}
-              </pre>
-            </div>
+            <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans leading-relaxed">{result}</pre>
           </div>
         </div>
       )}
@@ -183,8 +148,8 @@ export function StepGenerate({ config, updateConfig }) {
 
 function SummaryItem({ label, value }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-text-muted">{label}:</span>
+    <div className="flex items-start gap-2">
+      <span className="text-text-muted shrink-0">{label}:</span>
       <span className="text-text-primary font-medium">{value || '—'}</span>
     </div>
   )
