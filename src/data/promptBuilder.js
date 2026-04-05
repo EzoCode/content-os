@@ -1,3 +1,9 @@
+import { qualityCriteria } from './concepts.js';
+
+const scoreLabels = {};
+qualityCriteria.succes.forEach(c => { scoreLabels[c.id] = c.name; });
+qualityCriteria.nouveaute.forEach(c => { scoreLabels[c.id] = c.name; });
+
 export function buildPrompt(config) {
   const {
     idea,
@@ -13,6 +19,9 @@ export function buildPrompt(config) {
     additionalContext
   } = config;
 
+  const hasSuccesScores = scores?.succes && Object.keys(scores.succes).length > 0;
+  const hasNouveauteScores = scores?.nouveaute && Object.keys(scores.nouveaute).length > 0;
+
   return `Tu es un scripteur de contenu vidéo expert, spécialisé dans la création de scripts viraux. Tu appliques un système de création de contenu rigoureux basé sur la psychologie humaine, la narration cinématographique et les mécaniques de rétention.
 
 # BRIEF DE CRÉATION
@@ -22,33 +31,48 @@ ${idea}
 
 ## Concept Psychologique Choisi
 **${psychoConcept.name}** : ${psychoConcept.description}
+${psychoConcept.source ? `Source : ${psychoConcept.source}` : ''}
+${psychoConcept.example ? `Exemple d'application : ${psychoConcept.example}` : ''}
+${psychoConcept.tone ? `Tonalité attendue : ${psychoConcept.tone}` : ''}
 
 ## Catégorie de Hook
 **${hookCategory.name}** : ${hookCategory.description}
+${hookCategory.tip ? `Conseil clé : ${hookCategory.tip}` : ''}
 ${hookSubFormat ? `→ Sous-format spécifique : **${hookSubFormat}**` : ''}
 
 ## Format Mécanique
 **${formatMecanique.name}** : ${formatMecanique.description}
 Catégorie : ${formatMecanique.category}
+${formatMecanique.tip ? `Conseil de production : ${formatMecanique.tip}` : ''}
+${formatMecanique.effort ? `Niveau d'effort : ${formatMecanique.effort}` : ''}
 
 ## Format de Contenu
 **${contentFormat.name}** : ${contentFormat.description}
+${contentFormat.example ? `Exemple : ${contentFormat.example}` : ''}
+${contentFormat.tip ? `Conseil : ${contentFormat.tip}` : ''}
 
-## Type de Hook
+## Type de Hook (0-15 secondes)
 **${hookType.name}** : ${hookType.description}
+${hookType.example ? `Exemple : ${hookType.example}` : ''}
+${hookType.tip ? `Conseil : ${hookType.tip}` : ''}
 
-## Type de Lead
+## Type de Lead (15-90 secondes)
 **${leadType.name}** : ${leadType.description}
+${leadType.example ? `Exemple : ${leadType.example}` : ''}
+${leadType.tip ? `Conseil : ${leadType.tip}` : ''}
 
 ## Émotion de Closing
 **${closingEmotion.name}** : ${closingEmotion.description}
+${closingEmotion.effect ? `Effet recherché : ${closingEmotion.effect}` : ''}
+${closingEmotion.example ? `Exemple : ${closingEmotion.example}` : ''}
+${closingEmotion.bestFor ? `Idéal pour : ${closingEmotion.bestFor}` : ''}
 
-${scores ? `## Scores de Qualité Visés
-### SUCCES Framework
-${Object.entries(scores.succes || {}).map(([k, v]) => `- ${k}: ${v}/5`).join('\n')}
+${hasSuccesScores || hasNouveauteScores ? `## Scores de Qualité Visés
+${hasSuccesScores ? `### SUCCES Framework (Engagement & Mémorabilité)
+${Object.entries(scores.succes).map(([k, v]) => `- ${scoreLabels[k] || k}: ${v}/5`).join('\n')}` : ''}
 
-### Nouveauté
-${Object.entries(scores.nouveaute || {}).map(([k, v]) => `- ${k}: ${v}/5`).join('\n')}
+${hasNouveauteScores ? `### Nouveauté (Innovation de l'angle)
+${Object.entries(scores.nouveaute).map(([k, v]) => `- ${scoreLabels[k] || k}: ${v}/5`).join('\n')}` : ''}
 ` : ''}
 
 ${additionalContext ? `## Contexte Additionnel\n${additionalContext}` : ''}

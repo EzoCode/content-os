@@ -1,17 +1,25 @@
 export function StepIndicator({ steps, currentStep, onStepClick, config }) {
+  const isStepComplete = (stepId) => {
+    switch (stepId) {
+      case 1: return config.idea.trim().length > 10
+      case 2: return config.psychoConcept !== null
+      case 3: return config.hookCategory !== null
+      case 4: return config.formatMecanique !== null
+      case 5: return config.contentFormat !== null
+      case 6: return config.hookType !== null && config.leadType !== null
+      case 7: return config.closingEmotion !== null
+      default: return true
+    }
+  }
+
   const isStepAccessible = (stepId) => {
     if (stepId === 1) return true
     if (stepId <= currentStep) return true
-    switch (stepId) {
-      case 2: return config.idea.trim().length > 10
-      case 3: return config.psychoConcept !== null
-      case 4: return config.hookCategory !== null
-      case 5: return config.formatMecanique !== null
-      case 6: return config.contentFormat !== null
-      case 7: return config.hookType !== null && config.leadType !== null
-      case 8: return config.closingEmotion !== null
-      default: return false
+    // Check that ALL previous steps are complete
+    for (let i = 1; i < stepId; i++) {
+      if (!isStepComplete(i)) return false
     }
+    return true
   }
 
   return (

@@ -11,12 +11,39 @@ export function StepHookCategory({ config, updateConfig }) {
     setShowSub(true)
   }
 
+  // Get recommended hook categories based on psycho concept's bestWith
+  const recommended = config.psychoConcept?.bestWith || []
+  const recommendedHooks = hookCategories.filter(h => recommended.includes(h.id))
+
   return (
     <div className="space-y-6 pb-24">
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-bold text-text-primary">Catégorie de Hook</h2>
         <p className="text-text-secondary">Choisis le type de hook qui va capter l'attention</p>
       </div>
+
+      {recommendedHooks.length > 0 && (
+        <div className="bg-success/5 border border-success/20 rounded-xl p-4">
+          <div className="text-success text-xs font-medium mb-2">
+            Recommandés pour "{config.psychoConcept?.name}" :
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recommendedHooks.map(h => (
+              <button
+                key={h.id}
+                onClick={() => handleSelect(h)}
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+                  config.hookCategory?.id === h.id
+                    ? 'bg-success/20 text-success border border-success/40'
+                    : 'bg-bg-card border border-success/20 text-text-secondary hover:text-success hover:border-success/40'
+                }`}
+              >
+                {h.emoji} {h.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {hookCategories.map(cat => (
@@ -53,11 +80,17 @@ export function StepHookCategory({ config, updateConfig }) {
       )}
 
       {config.hookCategory && (
-        <div className="bg-accent/10 border border-border-active rounded-xl p-4 text-center">
-          <span className="text-accent-light text-sm">
-            Sélectionné : <strong>{config.hookCategory.name}</strong>
-            {config.hookSubFormat && <> → <strong>{config.hookSubFormat}</strong></>}
-          </span>
+        <div className="bg-accent/10 border border-border-active rounded-xl p-5 space-y-2">
+          <div className="text-accent-light text-sm font-semibold">
+            {config.hookCategory.emoji} {config.hookCategory.name}
+            {config.hookSubFormat && <span className="text-text-secondary font-normal"> → {config.hookSubFormat}</span>}
+          </div>
+          {config.hookCategory.tip && (
+            <div className="text-text-secondary text-sm">
+              <span className="text-text-muted text-xs block mb-1">Conseil :</span>
+              {config.hookCategory.tip}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { StepIndicator } from './components/StepIndicator'
 import { StepIdea } from './components/StepIdea'
 import { StepPsychoConcept } from './components/StepPsychoConcept'
@@ -20,9 +20,44 @@ const STEPS = [
   { id: 8, label: 'Générer', icon: '🚀' },
 ]
 
+const STORAGE_KEY = 'content-os-config'
+const STEP_KEY = 'content-os-step'
+
+function loadSavedConfig() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      return {
+        idea: parsed.idea || '',
+        psychoConcept: parsed.psychoConcept || null,
+        hookCategory: parsed.hookCategory || null,
+        hookSubFormat: parsed.hookSubFormat || null,
+        formatMecanique: parsed.formatMecanique || null,
+        contentFormat: parsed.contentFormat || null,
+        hookType: parsed.hookType || null,
+        leadType: parsed.leadType || null,
+        closingEmotion: parsed.closingEmotion || null,
+        scores: parsed.scores || { succes: {}, nouveaute: {} },
+        additionalContext: parsed.additionalContext || '',
+        apiKey: localStorage.getItem('claude-api-key') || '',
+      }
+    }
+  } catch { /* ignore parse errors */ }
+  return null
+}
+
+function loadSavedStep() {
+  try {
+    const saved = localStorage.getItem(STEP_KEY)
+    if (saved) return Math.max(1, Math.min(8, parseInt(saved, 10)))
+  } catch { /* ignore */ }
+  return 1
+}
+
 function App() {
-  const [step, setStep] = useState(1)
-  const [config, setConfig] = useState({
+  const [step, setStep] = useState(loadSavedStep)
+  const [config, setConfig] = useState(() => loadSavedConfig() || {
     idea: '',
     psychoConcept: null,
     hookCategory: null,
@@ -36,6 +71,17 @@ function App() {
     additionalContext: '',
     apiKey: localStorage.getItem('claude-api-key') || '',
   })
+
+  // Persist config to localStorage on every change
+  useEffect(() => {
+    const { apiKey: _key, ...configWithoutKey } = config
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(configWithoutKey))
+  }, [config])
+
+  // Persist current step
+  useEffect(() => {
+    localStorage.setItem(STEP_KEY, String(step))
+  }, [step])
 
   const updateConfig = useCallback((key, value) => {
     setConfig(prev => ({ ...prev, [key]: value }))
@@ -77,7 +123,37 @@ function App() {
             <span className="text-2xl">🎬</span>
             <h1 className="text-xl font-bold text-text-primary">Content OS</h1>
           </div>
-          <span className="text-text-muted text-sm">Système de Création de Contenu</span>
+          <div className="flex items-center gap-4">
+            {config.idea && (
+              <span className="text-text-muted text-xs max-w-[200px] truncate hidden md:inline" title={config.idea}>
+                {config.idea.substring(0, 40)}{config.idea.length > 40 ? '...' : ''}
+              </span>
+            )}
+            <button
+              onClick={() => {
+                if (confirm('Recommencer un nouveau script ? Ta configuration actuelle sera effacée.')) {
+                  setConfig({
+                    idea: '',
+                    psychoConcept: null,
+                    hookCategory: null,
+                    hookSubFormat: null,
+                    formatMecanique: null,
+                    contentFormat: null,
+                    hookType: null,
+                    leadType: null,
+                    closingEmotion: null,
+                    scores: { succes: {}, nouveaute: {} },
+                    additionalContext: '',
+                    apiKey: config.apiKey,
+                  })
+                  setStep(1)
+                }
+              }}
+              className="text-xs text-text-muted hover:text-danger transition-colors"
+            >
+              Nouveau script
+            </button>
+          </div>
         </div>
       </header>
 

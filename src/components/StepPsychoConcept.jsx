@@ -7,7 +7,8 @@ export function StepPsychoConcept({ config, updateConfig }) {
 
   const filtered = psychologicalConcepts.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.description.toLowerCase().includes(search.toLowerCase())
+    c.description.toLowerCase().includes(search.toLowerCase()) ||
+    (c.source && c.source.toLowerCase().includes(search.toLowerCase()))
   )
 
   return (
@@ -22,7 +23,7 @@ export function StepPsychoConcept({ config, updateConfig }) {
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher un concept..."
+          placeholder="Rechercher un concept, une source, un auteur..."
           className="w-full bg-bg-card border border-border rounded-xl px-4 py-2.5 text-text-primary placeholder-text-muted focus:outline-none focus:border-border-active transition-all"
         />
       </div>
@@ -39,10 +40,26 @@ export function StepPsychoConcept({ config, updateConfig }) {
       </div>
 
       {config.psychoConcept && (
-        <div className="bg-accent/10 border border-border-active rounded-xl p-4 text-center">
-          <span className="text-accent-light text-sm">
-            Sélectionné : <strong>{config.psychoConcept.name}</strong>
-          </span>
+        <div className="bg-accent/10 border border-border-active rounded-xl p-5 space-y-3">
+          <div className="text-accent-light text-sm font-semibold">
+            {config.psychoConcept.emoji} {config.psychoConcept.name}
+          </div>
+          {config.psychoConcept.source && (
+            <div className="text-text-muted text-xs">
+              Source : {config.psychoConcept.source}
+            </div>
+          )}
+          {config.psychoConcept.example && (
+            <div className="text-text-secondary text-sm">
+              <span className="text-text-muted text-xs block mb-1">Exemple d'application :</span>
+              {config.psychoConcept.example}
+            </div>
+          )}
+          {config.psychoConcept.tone && (
+            <div className="text-text-secondary text-xs">
+              Tonalité : <span className="text-accent-light">{config.psychoConcept.tone}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

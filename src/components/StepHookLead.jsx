@@ -15,13 +15,23 @@ export function StepHookLead({ config, updateConfig }) {
           {hookTypes.map(ht => (
             <SelectableCard
               key={ht.id}
-              item={{ ...ht, emoji: '🎣' }}
+              item={ht}
               selected={config.hookType?.id === ht.id}
               onClick={(h) => updateConfig('hookType', h)}
               compact
             />
           ))}
         </div>
+
+        {config.hookType && config.hookType.example && (
+          <div className="bg-bg-card border border-border rounded-xl p-4 space-y-1">
+            <div className="text-text-muted text-xs">Exemple de hook :</div>
+            <div className="text-text-primary text-sm italic">{config.hookType.example}</div>
+            {config.hookType.tip && (
+              <div className="text-text-muted text-xs mt-2">{config.hookType.tip}</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Divider */}
@@ -42,25 +52,35 @@ export function StepHookLead({ config, updateConfig }) {
           {leadTypes.map(lt => (
             <SelectableCard
               key={lt.id}
-              item={{ ...lt, emoji: '📖' }}
+              item={lt}
               selected={config.leadType?.id === lt.id}
               onClick={(l) => updateConfig('leadType', l)}
               compact
             />
           ))}
         </div>
+
+        {config.leadType && config.leadType.example && (
+          <div className="bg-bg-card border border-border rounded-xl p-4 space-y-1">
+            <div className="text-text-muted text-xs">Exemple de lead :</div>
+            <div className="text-text-primary text-sm italic">{config.leadType.example}</div>
+            {config.leadType.tip && (
+              <div className="text-text-muted text-xs mt-2">{config.leadType.tip}</div>
+            )}
+          </div>
+        )}
       </div>
 
       {(config.hookType || config.leadType) && (
         <div className="bg-accent/10 border border-border-active rounded-xl p-4 text-center space-y-1">
           {config.hookType && (
             <div className="text-accent-light text-sm">
-              Hook : <strong>{config.hookType.name}</strong>
+              {config.hookType.emoji} Hook : <strong>{config.hookType.name}</strong>
             </div>
           )}
           {config.leadType && (
             <div className="text-accent-light text-sm">
-              Lead : <strong>{config.leadType.name}</strong>
+              {config.leadType.emoji} Lead : <strong>{config.leadType.name}</strong>
             </div>
           )}
         </div>

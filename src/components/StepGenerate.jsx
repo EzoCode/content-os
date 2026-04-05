@@ -30,7 +30,7 @@ export function StepGenerate({ config, updateConfig }) {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6-20250514',
           max_tokens: 8192,
           messages: [
             {
@@ -81,19 +81,47 @@ export function StepGenerate({ config, updateConfig }) {
       </div>
 
       {/* Summary */}
-      <div className="bg-bg-card border border-border rounded-xl p-6 space-y-3">
+      <div className="bg-bg-card border border-border rounded-xl p-6 space-y-4">
         <h3 className="text-lg font-semibold text-accent-light">Récapitulatif</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <SummaryItem label="Idée" value={config.idea?.substring(0, 80) + (config.idea?.length > 80 ? '...' : '')} />
-          <SummaryItem label="Concept Psy" value={config.psychoConcept?.name} />
-          <SummaryItem label="Hook Category" value={config.hookCategory?.name} />
-          {config.hookSubFormat && <SummaryItem label="Sous-format" value={config.hookSubFormat} />}
-          <SummaryItem label="Format Mécanique" value={config.formatMecanique?.name} />
-          <SummaryItem label="Format Contenu" value={config.contentFormat?.name} />
-          <SummaryItem label="Type Hook" value={config.hookType?.name} />
-          <SummaryItem label="Type Lead" value={config.leadType?.name} />
-          <SummaryItem label="Émotion Closing" value={config.closingEmotion?.name} />
+
+        {/* Idea */}
+        <div className="border-b border-border pb-3">
+          <div className="text-text-muted text-xs mb-1">Idée</div>
+          <div className="text-text-primary text-sm">{config.idea}</div>
+          {config.additionalContext && (
+            <div className="text-text-muted text-xs mt-1">+ contexte additionnel</div>
+          )}
         </div>
+
+        {/* Config grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <SummaryItem emoji={config.psychoConcept?.emoji} label="Concept Psy" value={config.psychoConcept?.name} sub={config.psychoConcept?.source} />
+          <SummaryItem emoji={config.hookCategory?.emoji} label="Hook" value={config.hookCategory?.name} sub={config.hookSubFormat} />
+          <SummaryItem emoji={config.formatMecanique?.emoji} label="Format" value={config.formatMecanique?.name} sub={config.formatMecanique?.category} />
+          <SummaryItem emoji={config.contentFormat?.emoji} label="Structure" value={config.contentFormat?.name} />
+          <SummaryItem emoji={config.hookType?.emoji} label="Type Hook" value={config.hookType?.name} />
+          <SummaryItem emoji={config.leadType?.emoji} label="Type Lead" value={config.leadType?.name} />
+          <SummaryItem emoji={config.closingEmotion?.emoji} label="Closing" value={config.closingEmotion?.name} />
+        </div>
+
+        {/* Scores summary */}
+        {(Object.keys(config.scores?.succes || {}).length > 0 || Object.keys(config.scores?.nouveaute || {}).length > 0) && (
+          <div className="border-t border-border pt-3">
+            <div className="text-text-muted text-xs mb-2">Scores de qualité visés</div>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(config.scores?.succes || {}).map(([k, v]) => (
+                <span key={k} className="px-2 py-1 bg-accent/10 text-accent-light text-xs rounded-lg">
+                  {k}: {v}/5
+                </span>
+              ))}
+              {Object.entries(config.scores?.nouveaute || {}).map(([k, v]) => (
+                <span key={k} className="px-2 py-1 bg-success/10 text-success text-xs rounded-lg">
+                  {k}: {v}/5
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* API Key */}
@@ -181,11 +209,15 @@ export function StepGenerate({ config, updateConfig }) {
   )
 }
 
-function SummaryItem({ label, value }) {
+function SummaryItem({ emoji, label, value, sub }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-text-muted">{label}:</span>
-      <span className="text-text-primary font-medium">{value || '—'}</span>
+    <div className="flex items-start gap-2">
+      {emoji && <span className="text-base mt-0.5">{emoji}</span>}
+      <div>
+        <span className="text-text-muted text-xs">{label}</span>
+        <div className="text-text-primary font-medium">{value || '—'}</div>
+        {sub && <div className="text-text-muted text-xs">{sub}</div>}
+      </div>
     </div>
   )
 }

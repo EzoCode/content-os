@@ -60,6 +60,30 @@ export function StepClosingScores({ config, updateConfig }) {
         </div>
       </div>
 
+      {config.closingEmotion && (
+        <div className="bg-accent/10 border border-border-active rounded-xl p-5 space-y-2">
+          <div className="text-accent-light text-sm font-semibold">
+            {config.closingEmotion.emoji} {config.closingEmotion.name}
+          </div>
+          {config.closingEmotion.effect && (
+            <div className="text-text-secondary text-sm">
+              <span className="text-text-muted text-xs block mb-1">Effet sur le spectateur :</span>
+              {config.closingEmotion.effect}
+            </div>
+          )}
+          {config.closingEmotion.example && (
+            <div className="text-text-secondary text-sm italic">
+              {config.closingEmotion.example}
+            </div>
+          )}
+          {config.closingEmotion.bestFor && (
+            <div className="text-text-muted text-xs">
+              Idéal pour : {config.closingEmotion.bestFor}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Divider */}
       <div className="flex items-center gap-4">
         <div className="flex-1 h-px bg-border" />
