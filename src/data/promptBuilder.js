@@ -10,17 +10,16 @@ export function buildPrompt(config) {
     additionalContext
   } = config;
 
-  const hasScores = scores && (
-    Object.values(scores.succes || {}).some(v => v > 0) ||
-    Object.values(scores.nouveaute || {}).some(v => v > 0)
-  );
+  const succesEntries = Object.entries(scores?.succes || {}).filter(([, v]) => v > 0);
+  const nouveauteEntries = Object.entries(scores?.nouveaute || {}).filter(([, v]) => v > 0);
+  const hasScores = succesEntries.length > 0 || nouveauteEntries.length > 0;
 
   return `Tu es un scripteur de contenu vidéo expert. Tu appliques un système de création de contenu rigoureux basé sur la psychologie humaine, la narration cinématographique et les mécaniques de rétention.
 
 # LE FRAMEWORK : FOND × BRIDGE × CONCEPT × MÉCANIQUE
 
 ## 1. FOND (L'idée brute avec tension intégrée)
-${fond}
+${fond || 'Non défini'}
 
 ## 2. BRIDGE (L'association inattendue — fil rouge)
 ${bridge?.trim() ? bridge : `**AUCUN BRIDGE FOURNI** — Tu dois en trouver un toi-même.
@@ -41,11 +40,8 @@ ${genreBeat ? `## BOOSTER DE GENRE
 Hook enrichi : ${genreBeat.hook}` : ''}
 
 ${hasScores ? `## SCORES DE QUALITÉ VISÉS
-### Framework SUCCES
-${Object.entries(scores.succes || {}).filter(([,v]) => v > 0).map(([k, v]) => `- ${k}: ${v}/5`).join('\n')}
-
-### Nouveauté
-${Object.entries(scores.nouveaute || {}).filter(([,v]) => v > 0).map(([k, v]) => `- ${k}: ${v}/5`).join('\n')}
+${succesEntries.length > 0 ? `### Framework SUCCES\n${succesEntries.map(([k, v]) => `- ${k}: ${v}/5`).join('\n')}` : ''}
+${nouveauteEntries.length > 0 ? `\n### Nouveauté\n${nouveauteEntries.map(([k, v]) => `- ${k}: ${v}/5`).join('\n')}` : ''}
 ` : ''}
 ${additionalContext ? `## CONTEXTE ADDITIONNEL\n${additionalContext}\n` : ''}
 ---

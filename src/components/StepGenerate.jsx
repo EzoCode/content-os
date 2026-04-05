@@ -1,11 +1,31 @@
 import { useState, useRef } from 'react'
 import { buildPrompt } from '../data/promptBuilder'
 
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^### (.+)$/gm, '<h3 class="text-base font-bold text-accent-light mt-6 mb-2">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-accent-light mt-8 mb-3">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-text-primary mt-8 mb-4">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-text-primary font-semibold">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc text-text-secondary">$1</li>')
+    .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 list-decimal text-text-secondary">$2</li>')
+    .replace(/---/g, '<hr class="border-border my-6" />')
+    .replace(/\n\n/g, '</p><p class="mb-3">')
+    .replace(/\n/g, '<br />')
+    .replace(/^/, '<p class="mb-3">')
+    .replace(/$/, '</p>')
+}
+
 export function StepGenerate({ config, updateConfig }) {
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState('')
   const [error, setError] = useState('')
   const [showPrompt, setShowPrompt] = useState(false)
+  const [copied, setCopied] = useState(null)
   const resultRef = useRef(null)
 
   const prompt = buildPrompt(config)
@@ -30,7 +50,7 @@ export function StepGenerate({ config, updateConfig }) {
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-6-20250415',
           max_tokens: 8192,
           messages: [{ role: 'user', content: prompt }]
         })
@@ -54,6 +74,21 @@ export function StepGenerate({ config, updateConfig }) {
   const handleSaveKey = (key) => {
     updateConfig('apiKey', key)
     localStorage.setItem('claude-api-key', key)
+  }
+
+  const showCopied = (type) => {
+    setCopied(type)
+    setTimeout(() => setCopied(null), 2000)
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(result)
+    showCopied('script')
+  }
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(prompt)
+    showCopied('prompt')
   }
 
   return (
@@ -98,10 +133,10 @@ export function StepGenerate({ config, updateConfig }) {
           {showPrompt ? 'Masquer' : 'Voir le Prompt'}
         </button>
         <button
-          onClick={() => navigator.clipboard.writeText(prompt)}
+          onClick={handleCopyPrompt}
           className="px-5 py-3 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-border-active transition-all text-sm"
         >
-          Copier le Prompt
+          {copied === 'prompt' ? '✓ Copié !' : 'Copier le Prompt'}
         </button>
         <button
           onClick={handleGenerate}
@@ -131,14 +166,17 @@ export function StepGenerate({ config, updateConfig }) {
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-success">Script Généré</h3>
             <button
-              onClick={() => navigator.clipboard.writeText(result)}
+              onClick={handleCopy}
               className="px-4 py-2 rounded-lg bg-success/20 text-success text-sm hover:bg-success/30 transition-all"
             >
-              Copier le Script
+              {copied === 'script' ? '✓ Copié !' : 'Copier le Script'}
             </button>
           </div>
           <div className="bg-bg-card border border-success/30 rounded-xl p-6">
-            <pre className="whitespace-pre-wrap text-sm text-text-primary font-sans leading-relaxed">{result}</pre>
+            <div
+              className="prose prose-invert max-w-none text-sm text-text-primary leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(result) }}
+            />
           </div>
         </div>
       )}
