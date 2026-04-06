@@ -5,8 +5,6 @@ export function SettingsPanel({ apiKey, onSaveKey, formatMecanique, onSetFormat,
   const [showFormats, setShowFormats] = useState(false)
   const [showBeats, setShowBeats] = useState(false)
 
-  const categories = [...new Set(formatMecaniques.map(f => f.category))]
-
   return (
     <div className="fade-in mb-6 space-y-4 bg-bg-card border border-border rounded-xl p-5">
       {/* API Key */}

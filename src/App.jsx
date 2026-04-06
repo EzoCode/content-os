@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { conceptsPsy, formatMecaniques, genreBeats } from './data/concepts'
+import { conceptsPsy } from './data/concepts'
 import { buildPrompt } from './data/promptBuilder'
 import { ConceptGrid } from './components/ConceptGrid'
 import { ResultPanel } from './components/ResultPanel'
@@ -15,7 +15,7 @@ function App() {
   const [generating, setGenerating] = useState(null)
   const [queue, setQueue] = useState([])
   const [showSettings, setShowSettings] = useState(false)
-  const abortRef = useRef(null)
+  const abortRef = useRef(false)
 
   const saveApiKey = (key) => {
     setApiKey(key)
@@ -76,10 +76,12 @@ function App() {
   const handleGenerate = async () => {
     if (!apiKey || selectedConcepts.length === 0 || !fond.trim()) return
 
+    abortRef.current = false
     const toGenerate = [...selectedConcepts]
     setQueue(toGenerate.map(c => c.key))
 
     for (const entry of toGenerate) {
+      if (abortRef.current) break
       setGenerating(entry.key)
       try {
         const result = await generateOne(entry)
@@ -90,6 +92,11 @@ function App() {
       setQueue(prev => prev.filter(k => k !== entry.key))
     }
     setGenerating(null)
+    setQueue([])
+  }
+
+  const handleAbort = () => {
+    abortRef.current = true
   }
 
   const selectedCount = selectedConcepts.length
@@ -159,16 +166,22 @@ function App() {
                 Tout deselectionner
               </button>
             )}
-            <button
-              onClick={handleGenerate}
-              disabled={!fond.trim() || selectedCount === 0 || !apiKey || generating !== null}
-              className="glow-btn px-6 py-2.5 rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {generating !== null
-                ? `Generation en cours...`
-                : `Generer ${selectedCount} script${selectedCount > 1 ? 's' : ''}`
-              }
-            </button>
+            {generating !== null ? (
+              <button
+                onClick={handleAbort}
+                className="px-6 py-2.5 rounded-lg text-white font-medium bg-danger hover:bg-danger/80 transition-all"
+              >
+                Arreter la generation
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={!fond.trim() || selectedCount === 0 || !apiKey}
+                className="glow-btn px-6 py-2.5 rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Generer {selectedCount} script{selectedCount > 1 ? 's' : ''}
+              </button>
+            )}
           </div>
         </div>
 
