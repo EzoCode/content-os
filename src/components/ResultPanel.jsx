@@ -1,19 +1,51 @@
 import { useState } from 'react'
 
-export function ResultPanel({ results, selectedConcepts }) {
+export function ResultPanel({ results, selectedConcepts, onClearResults }) {
   const [expandedKey, setExpandedKey] = useState(null)
+  const [copiedKey, setCopiedKey] = useState(null)
 
   const entries = selectedConcepts
     .filter(c => results[c.key])
     .map(c => ({ ...c, result: results[c.key] }))
 
-  if (entries.length === 0) return null
+  // Also show results for concepts no longer selected (from localStorage)
+  const orphanKeys = Object.keys(results).filter(k => !selectedConcepts.some(c => c.key === k))
+
+  if (entries.length === 0 && orphanKeys.length === 0) return null
+
+  const handleCopy = async (key, text) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey(null), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopiedKey(key)
+      setTimeout(() => setCopiedKey(null), 2000)
+    }
+  }
 
   return (
     <div className="mt-8 space-y-4">
-      <h2 className="text-xl font-bold text-text-primary">
-        Scripts generes ({entries.length})
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-text-primary">
+          Scripts generes ({entries.length + orphanKeys.length})
+        </h2>
+        {onClearResults && (
+          <button
+            onClick={onClearResults}
+            className="text-sm text-text-muted hover:text-danger transition-all"
+          >
+            Tout effacer
+          </button>
+        )}
+      </div>
 
       <div className="space-y-3">
         {entries.map(entry => {
@@ -39,11 +71,15 @@ export function ResultPanel({ results, selectedConcepts }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigator.clipboard.writeText(entry.result.text)
+                        handleCopy(entry.key, entry.result.text)
                       }}
-                      className="text-xs px-3 py-1 rounded-lg bg-success/20 text-success hover:bg-success/30 transition-all"
+                      className={`text-xs px-3 py-1 rounded-lg transition-all ${
+                        copiedKey === entry.key
+                          ? 'bg-success/30 text-success'
+                          : 'bg-success/20 text-success hover:bg-success/30'
+                      }`}
                     >
-                      Copier
+                      {copiedKey === entry.key ? 'Copie !' : 'Copier'}
                     </button>
                   )}
                   <span className="text-text-muted text-sm">{isExpanded ? '▼' : '▶'}</span>

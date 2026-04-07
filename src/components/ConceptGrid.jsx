@@ -1,10 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export function ConceptGrid({ concepts, selectedConcepts, toggleConcept, isSelected, results, generating, queue }) {
   const [expandedId, setExpandedId] = useState(null)
+  const gridRef = useRef(null)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!expandedId) return
+    const handleClick = (e) => {
+      if (gridRef.current && !gridRef.current.contains(e.target)) {
+        setExpandedId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [expandedId])
+
+  // Close dropdown on Escape key
+  useEffect(() => {
+    if (!expandedId) return
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setExpandedId(null)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [expandedId])
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {concepts.map(cat => {
         const catSelected = selectedConcepts.filter(c => c.concept.id === cat.id)
         const hasResult = catSelected.some(c => results[c.key])
