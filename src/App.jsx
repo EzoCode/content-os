@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { conceptsPsy, formatMecaniques, genreBeats } from './data/concepts'
+import { conceptsPsy } from './data/concepts'
 import { buildPrompt } from './data/promptBuilder'
 import { ConceptGrid } from './components/ConceptGrid'
 import { ResultPanel } from './components/ResultPanel'
@@ -16,6 +16,7 @@ function App() {
   const [queue, setQueue] = useState([])
   const [showSettings, setShowSettings] = useState(false)
   const abortRef = useRef(null)
+  const cancelledRef = useRef(false)
 
   const saveApiKey = (key) => {
     setApiKey(key)
@@ -37,59 +38,82 @@ function App() {
   }, [selectedConcepts])
 
   const generateOne = async (entry) => {
-    const config = {
-      fond,
-      bridge: '',
-      conceptPsy: entry.concept,
-      subConcept: entry.subConcept,
-      formatMecanique,
-      genreBeat,
-      scores: { succes: {}, nouveaute: {} },
-      additionalContext: '',
+    const controller = new AbortController()
+    abortRef.current = controller
+    const timeout = setTimeout(() => controller.abort(), 120_000)
+
+    try {
+      const config = {
+        fond,
+        bridge: '',
+        conceptPsy: entry.concept,
+        subConcept: entry.subConcept,
+        formatMecanique,
+        genreBeat,
+        scores: { succes: {}, nouveaute: {} },
+        additionalContext: '',
+      }
+      const prompt = buildPrompt(config)
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8192,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error?.message || `Erreur API: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.content?.[0]?.text || 'Pas de réponse'
+    } finally {
+      clearTimeout(timeout)
+      abortRef.current = null
     }
-    const prompt = buildPrompt(config)
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8192,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.error?.message || `Erreur API: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return data.content?.[0]?.text || 'Pas de réponse'
   }
+
+  const stopGeneration = useCallback(() => {
+    cancelledRef.current = true
+    if (abortRef.current) abortRef.current.abort()
+  }, [])
 
   const handleGenerate = async () => {
     if (!apiKey || selectedConcepts.length === 0 || !fond.trim()) return
 
+    cancelledRef.current = false
     const toGenerate = [...selectedConcepts]
     setQueue(toGenerate.map(c => c.key))
 
     for (const entry of toGenerate) {
+      if (cancelledRef.current) break
       setGenerating(entry.key)
       try {
         const result = await generateOne(entry)
         setResults(prev => ({ ...prev, [entry.key]: { text: result, error: false } }))
       } catch (err) {
+        if (cancelledRef.current) {
+          setResults(prev => ({ ...prev, [entry.key]: { text: 'Generation annulee', error: true } }))
+          break
+        }
         setResults(prev => ({ ...prev, [entry.key]: { text: err.message, error: true } }))
       }
       setQueue(prev => prev.filter(k => k !== entry.key))
     }
     setGenerating(null)
+    setQueue([])
+    cancelledRef.current = false
   }
 
   const selectedCount = selectedConcepts.length
@@ -159,16 +183,22 @@ function App() {
                 Tout deselectionner
               </button>
             )}
-            <button
-              onClick={handleGenerate}
-              disabled={!fond.trim() || selectedCount === 0 || !apiKey || generating !== null}
-              className="glow-btn px-6 py-2.5 rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {generating !== null
-                ? `Generation en cours...`
-                : `Generer ${selectedCount} script${selectedCount > 1 ? 's' : ''}`
-              }
-            </button>
+            {generating !== null ? (
+              <button
+                onClick={stopGeneration}
+                className="px-6 py-2.5 rounded-lg text-white font-medium bg-danger hover:bg-danger/80 transition-all"
+              >
+                Arreter
+              </button>
+            ) : (
+              <button
+                onClick={handleGenerate}
+                disabled={!fond.trim() || selectedCount === 0 || !apiKey}
+                className="glow-btn px-6 py-2.5 rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Generer {selectedCount} script{selectedCount > 1 ? 's' : ''}
+              </button>
+            )}
           </div>
         </div>
 

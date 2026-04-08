@@ -30,19 +30,26 @@ export function SettingsPanel({ apiKey, onSaveKey, formatMecanique, onSetFormat,
           {showFormats ? '▼' : '▶'} Mecanique {formatMecanique ? `: ${formatMecanique.name}` : '(optionnel)'}
         </button>
         {showFormats && (
-          <div className="fade-in mt-2 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {formatMecaniques.map(f => (
-              <button
-                key={f.id}
-                onClick={() => onSetFormat(formatMecanique?.id === f.id ? null : f)}
-                className={`text-left p-2 rounded-lg text-xs transition-all ${
-                  formatMecanique?.id === f.id
-                    ? 'bg-accent/20 text-accent-light border border-border-active'
-                    : 'bg-bg-primary border border-border text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <span>{f.emoji} {f.name}</span>
-              </button>
+          <div className="fade-in mt-3 space-y-3">
+            {categories.map(cat => (
+              <div key={cat}>
+                <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1.5">{cat}</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {formatMecaniques.filter(f => f.category === cat).map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => onSetFormat(formatMecanique?.id === f.id ? null : f)}
+                      className={`text-left p-2 rounded-lg text-xs transition-all ${
+                        formatMecanique?.id === f.id
+                          ? 'bg-accent/20 text-accent-light border border-border-active'
+                          : 'bg-bg-primary border border-border text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      <span>{f.emoji} {f.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

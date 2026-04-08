@@ -1,7 +1,14 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 export function ResultPanel({ results, selectedConcepts }) {
   const [expandedKey, setExpandedKey] = useState(null)
+  const [copiedKey, setCopiedKey] = useState(null)
+
+  const handleCopy = useCallback((key, text) => {
+    navigator.clipboard.writeText(text)
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }, [])
 
   const entries = selectedConcepts
     .filter(c => results[c.key])
@@ -39,11 +46,11 @@ export function ResultPanel({ results, selectedConcepts }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        navigator.clipboard.writeText(entry.result.text)
+                        handleCopy(entry.key, entry.result.text)
                       }}
                       className="text-xs px-3 py-1 rounded-lg bg-success/20 text-success hover:bg-success/30 transition-all"
                     >
-                      Copier
+                      {copiedKey === entry.key ? '✓ Copie !' : 'Copier'}
                     </button>
                   )}
                   <span className="text-text-muted text-sm">{isExpanded ? '▼' : '▶'}</span>
