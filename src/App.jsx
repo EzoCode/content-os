@@ -4,9 +4,12 @@ import { buildPrompt } from './data/promptBuilder'
 import { ConceptGrid } from './components/ConceptGrid'
 import { ResultPanel } from './components/ResultPanel'
 import { SettingsPanel } from './components/SettingsPanel'
+import { HistoryPanel } from './components/HistoryPanel'
+import { saveToHistory } from './data/history'
 
 function App() {
   const [fond, setFond] = useState('')
+  const [bridge, setBridge] = useState('')
   const [selectedConcepts, setSelectedConcepts] = useState([])
   const [formatMecanique, setFormatMecanique] = useState(null)
   const [genreBeat, setGenreBeat] = useState(null)
@@ -15,6 +18,7 @@ function App() {
   const [generating, setGenerating] = useState(null)
   const [queue, setQueue] = useState([])
   const [showSettings, setShowSettings] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const abortRef = useRef(null)
   const cancelledRef = useRef(false)
 
@@ -40,12 +44,13 @@ function App() {
   const generateOne = async (entry) => {
     const controller = new AbortController()
     abortRef.current = controller
-    const timeout = setTimeout(() => controller.abort(), 120_000)
+    let timedOut = false
+    const timeout = setTimeout(() => { timedOut = true; controller.abort() }, 120_000)
 
     try {
       const config = {
         fond,
-        bridge: '',
+        bridge,
         conceptPsy: entry.concept,
         subConcept: entry.subConcept,
         formatMecanique,
@@ -78,6 +83,9 @@ function App() {
 
       const data = await response.json()
       return data.content?.[0]?.text || 'Pas de réponse'
+    } catch (err) {
+      if (timedOut) throw new Error('Timeout : la generation a depasse 2 minutes. Reessaye avec un concept plus simple.')
+      throw err
     } finally {
       clearTimeout(timeout)
       abortRef.current = null
@@ -114,6 +122,32 @@ function App() {
     setGenerating(null)
     setQueue([])
     cancelledRef.current = false
+
+    // Save to history after generation
+    setResults(prev => {
+      const hasAnyResult = Object.values(prev).some(r => r && !r.error)
+      if (hasAnyResult) {
+        saveToHistory({
+          fond,
+          bridge,
+          results: prev,
+          conceptKeys: toGenerate.map(c => c.key),
+          conceptLabels: toGenerate.map(c =>
+            c.subConcept
+              ? `${c.concept.emoji} ${c.concept.name} → ${c.subConcept.name}`
+              : `${c.concept.emoji} ${c.concept.name}`
+          ),
+        })
+      }
+      return prev
+    })
+  }
+
+  const restoreSession = (session) => {
+    setFond(session.fond || '')
+    setBridge(session.bridge || '')
+    setResults(session.results || {})
+    setShowHistory(false)
   }
 
   const selectedCount = selectedConcepts.length
@@ -129,7 +163,13 @@ function App() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setShowSettings(!showSettings)}
+              onClick={() => { setShowHistory(!showHistory); if (!showHistory) setShowSettings(false) }}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${showHistory ? 'bg-accent/20 text-accent-light' : 'text-text-muted hover:text-text-primary'}`}
+            >
+              Historique
+            </button>
+            <button
+              onClick={() => { setShowSettings(!showSettings); if (!showSettings) setShowHistory(false) }}
               className={`px-3 py-1.5 rounded-lg text-sm transition-all ${showSettings ? 'bg-accent/20 text-accent-light' : 'text-text-muted hover:text-text-primary'}`}
             >
               Settings
@@ -151,17 +191,38 @@ function App() {
           />
         )}
 
-        {/* Fond Input */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-text-secondary mb-2">
-            Le Fond — L'idee brute avec tension integree
-          </label>
-          <textarea
-            value={fond}
-            onChange={e => setFond(e.target.value)}
-            placeholder={"Ton idee avec tension : un paradoxe, un gap, un conflit..."}
-            className="w-full h-28 bg-bg-card border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-border-active focus:ring-1 focus:ring-accent/30 transition-all"
-          />
+        {/* History Panel (collapsible) */}
+        {showHistory && (
+          <div className="fade-in mb-6 bg-bg-card border border-border rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Historique des generations</h3>
+            <HistoryPanel onRestore={restoreSession} />
+          </div>
+        )}
+
+        {/* Fond + Bridge Inputs */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Le Fond — L'idee brute avec tension integree
+            </label>
+            <textarea
+              value={fond}
+              onChange={e => setFond(e.target.value)}
+              placeholder={"Ton idee avec tension : un paradoxe, un gap, un conflit..."}
+              className="w-full h-28 bg-bg-card border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-border-active focus:ring-1 focus:ring-accent/30 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Le Bridge — L'association inattendue (optionnel)
+            </label>
+            <textarea
+              value={bridge}
+              onChange={e => setBridge(e.target.value)}
+              placeholder={"Celebrite, film, experience scientifique, phenomene de societe... Si vide, Claude en trouvera un."}
+              className="w-full h-28 bg-bg-card border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-border-active focus:ring-1 focus:ring-accent/30 transition-all"
+            />
+          </div>
         </div>
 
         {/* Concepts Grid + Generate Bar */}
@@ -191,16 +252,47 @@ function App() {
                 Arreter
               </button>
             ) : (
-              <button
-                onClick={handleGenerate}
-                disabled={!fond.trim() || selectedCount === 0 || !apiKey}
-                className="glow-btn px-6 py-2.5 rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Generer {selectedCount} script{selectedCount > 1 ? 's' : ''}
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={handleGenerate}
+                  disabled={!fond.trim() || selectedCount === 0 || !apiKey}
+                  className="glow-btn px-6 py-2.5 rounded-lg text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Generer {selectedCount} script{selectedCount > 1 ? 's' : ''}
+                </button>
+                {(!fond.trim() || selectedCount === 0 || !apiKey) && (
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 text-xs rounded-lg bg-bg-card border border-border text-text-secondary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    {!apiKey ? 'Ajoute ta cle API dans Settings' : !fond.trim() ? 'Ecris ton idee dans le Fond' : 'Selectionne au moins 1 concept'}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
+
+        {/* Progress bar during generation */}
+        {generating !== null && (
+          <div className="mb-4 fade-in">
+            <div className="flex items-center justify-between text-xs text-text-muted mb-1.5">
+              <span>
+                Generation en cours...
+                {(() => {
+                  const done = selectedConcepts.filter(c => results[c.key] && c.key !== generating).length
+                  return ` (${done + 1}/${selectedConcepts.length})`
+                })()}
+              </span>
+              <span>{selectedConcepts.find(c => c.key === generating)?.subConcept?.name || selectedConcepts.find(c => c.key === generating)?.concept.name || ''}</span>
+            </div>
+            <div className="w-full h-1.5 bg-bg-card rounded-full overflow-hidden">
+              <div
+                className="h-full bg-accent rounded-full transition-all duration-500"
+                style={{
+                  width: `${((selectedConcepts.filter(c => results[c.key]).length) / selectedConcepts.length) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         <ConceptGrid
           concepts={conceptsPsy}
