@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { conceptsPsy } from './data/concepts'
+import { rebuildSelectedConcepts } from './data/conceptLookup'
 import { buildPrompt } from './data/promptBuilder'
 import { ConceptGrid } from './components/ConceptGrid'
 import { ResultPanel } from './components/ResultPanel'
@@ -17,6 +18,7 @@ function App() {
   const [results, setResults] = useState({})
   const [generating, setGenerating] = useState(null)
   const [queue, setQueue] = useState([])
+  const [currentBatchKeys, setCurrentBatchKeys] = useState([])
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const abortRef = useRef(null)
@@ -102,51 +104,59 @@ function App() {
 
     cancelledRef.current = false
     const toGenerate = [...selectedConcepts]
-    setQueue(toGenerate.map(c => c.key))
+    const batchKeys = toGenerate.map(c => c.key)
+    setQueue(batchKeys)
+    setCurrentBatchKeys(batchKeys)
+    const generatedResults = {}
 
     for (const entry of toGenerate) {
       if (cancelledRef.current) break
       setGenerating(entry.key)
       try {
         const result = await generateOne(entry)
-        setResults(prev => ({ ...prev, [entry.key]: { text: result, error: false } }))
+        const resultObj = { text: result, error: false }
+        generatedResults[entry.key] = resultObj
+        setResults(prev => ({ ...prev, [entry.key]: resultObj }))
       } catch (err) {
         if (cancelledRef.current) {
-          setResults(prev => ({ ...prev, [entry.key]: { text: 'Generation annulee', error: true } }))
+          const resultObj = { text: 'Generation annulee', error: true }
+          generatedResults[entry.key] = resultObj
+          setResults(prev => ({ ...prev, [entry.key]: resultObj }))
           break
         }
-        setResults(prev => ({ ...prev, [entry.key]: { text: err.message, error: true } }))
+        const resultObj = { text: err.message, error: true }
+        generatedResults[entry.key] = resultObj
+        setResults(prev => ({ ...prev, [entry.key]: resultObj }))
       }
       setQueue(prev => prev.filter(k => k !== entry.key))
     }
     setGenerating(null)
     setQueue([])
+    setCurrentBatchKeys([])
     cancelledRef.current = false
 
     // Save to history after generation
-    setResults(prev => {
-      const hasAnyResult = Object.values(prev).some(r => r && !r.error)
-      if (hasAnyResult) {
-        saveToHistory({
-          fond,
-          bridge,
-          results: prev,
-          conceptKeys: toGenerate.map(c => c.key),
-          conceptLabels: toGenerate.map(c =>
-            c.subConcept
-              ? `${c.concept.emoji} ${c.concept.name} → ${c.subConcept.name}`
-              : `${c.concept.emoji} ${c.concept.name}`
-          ),
-        })
-      }
-      return prev
-    })
+    const hasAnyResult = Object.values(generatedResults).some(r => !r.error)
+    if (hasAnyResult) {
+      saveToHistory({
+        fond,
+        bridge,
+        results: generatedResults,
+        conceptKeys: toGenerate.map(c => c.key),
+        conceptLabels: toGenerate.map(c =>
+          c.subConcept
+            ? `${c.concept.emoji} ${c.concept.name} → ${c.subConcept.name}`
+            : `${c.concept.emoji} ${c.concept.name}`
+        ),
+      })
+    }
   }
 
   const restoreSession = (session) => {
     setFond(session.fond || '')
     setBridge(session.bridge || '')
     setResults(session.results || {})
+    setSelectedConcepts(rebuildSelectedConcepts(session.conceptKeys))
     setShowHistory(false)
   }
 
@@ -271,14 +281,14 @@ function App() {
         </div>
 
         {/* Progress bar during generation */}
-        {generating !== null && (
+        {generating !== null && currentBatchKeys.length > 0 && (
           <div className="mb-4 fade-in">
             <div className="flex items-center justify-between text-xs text-text-muted mb-1.5">
               <span>
                 Generation en cours...
                 {(() => {
-                  const done = selectedConcepts.filter(c => results[c.key] && c.key !== generating).length
-                  return ` (${done + 1}/${selectedConcepts.length})`
+                  const done = currentBatchKeys.filter(k => results[k] && k !== generating).length
+                  return ` (${done + 1}/${currentBatchKeys.length})`
                 })()}
               </span>
               <span>{selectedConcepts.find(c => c.key === generating)?.subConcept?.name || selectedConcepts.find(c => c.key === generating)?.concept.name || ''}</span>
@@ -287,7 +297,7 @@ function App() {
               <div
                 className="h-full bg-accent rounded-full transition-all duration-500"
                 style={{
-                  width: `${((selectedConcepts.filter(c => results[c.key]).length) / selectedConcepts.length) * 100}%`,
+                  width: `${(currentBatchKeys.filter(k => results[k]).length / currentBatchKeys.length) * 100}%`,
                 }}
               />
             </div>
